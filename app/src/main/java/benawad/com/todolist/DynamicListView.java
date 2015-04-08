@@ -40,6 +40,8 @@ import android.widget.ListView;
 
 import java.util.ArrayList;
 
+import benawad.com.todolist.adapters.ItemsArrayAdapter;
+
 /**
  * The dynamic listview is an extension of listview that supports cell dragging
  * and swapping.
@@ -50,7 +52,7 @@ import java.util.ArrayList;
  * be swapped, all the corresponding data set and layout changes are handled here.
  *
  * If no cell is selected, all the touch events are passed down to the listview
- * and behave normally. If one of the items in the listview experiences a
+ * and behave normally. If one of the mItems in the listview experiences a
  * long press event, the contents of its current visible state are captured as
  * a bitmap and its visibility is set to INVISIBLE. A hover cell is then created and
  * added to this layout as an overlaying BitmapDrawable above the listview. Once the
@@ -118,7 +120,7 @@ public class DynamicListView extends ListView {
     }
 
     /**
-     * Listens for long clicks on any items in the listview. When a cell has
+     * Listens for long clicks on any mItems in the listview. When a cell has
      * been selected, the hover cell is created and set up.
      */
     private OnItemLongClickListener mOnItemLongClickListener =
@@ -200,7 +202,7 @@ public class DynamicListView extends ListView {
      */
     private void updateNeighborViewsForID(long itemID) {
         int position = getPositionForID(itemID);
-        StableArrayAdapter adapter = ((StableArrayAdapter)getAdapter());
+        ItemsArrayAdapter adapter = ((ItemsArrayAdapter)getAdapter());
         mAboveItemId = adapter.getItemId(position - 1);
         mBelowItemId = adapter.getItemId(position + 1);
     }
@@ -208,7 +210,7 @@ public class DynamicListView extends ListView {
     /** Retrieves the view in the list corresponding to itemID */
     public View getViewForID (long itemID) {
         int firstVisiblePosition = getFirstVisiblePosition();
-        StableArrayAdapter adapter = ((StableArrayAdapter)getAdapter());
+        ItemsArrayAdapter adapter = ((ItemsArrayAdapter)getAdapter());
         for(int i = 0; i < getChildCount(); i++) {
             View v = getChildAt(i);
             int position = firstVisiblePosition + i;
@@ -233,7 +235,7 @@ public class DynamicListView extends ListView {
     /**
      *  dispatchDraw gets invoked when all the child views are about to be drawn.
      *  By overriding this method, the hover cell (BitmapDrawable) can be drawn
-     *  over the listview's items whenever the listview is redrawn.
+     *  over the listview's mItems whenever the listview is redrawn.
      */
     @Override
     protected void dispatchDraw(Canvas canvas) {
@@ -477,7 +479,7 @@ public class DynamicListView extends ListView {
     /**
      * This method is in charge of determining if the hover cell is above
      * or below the bounds of the listview. If so, the listview does an appropriate
-     * upward or downward smooth scroll so as to reveal new items.
+     * upward or downward smooth scroll so as to reveal new mItems.
      */
     public boolean handleMobileCellScroll(Rect r) {
         int offset = computeVerticalScrollOffset();
