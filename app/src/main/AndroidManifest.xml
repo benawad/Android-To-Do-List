@@ -16,6 +16,17 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".NoteActivity"
+            android:label="@string/title_activity_note"
+            android:parentActivityName=".MainActivity" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="benawad.com.todolist.MainActivity" />
+        </activity>
+        <provider
+            android:name=".contentprovider.NoteContentProvider"
+            android:authorities="benawad.com.todolist.contentprovider" />
     </application>
 
 </manifest>
