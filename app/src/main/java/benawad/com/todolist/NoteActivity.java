@@ -99,6 +99,12 @@ public class NoteActivity extends ActionBarActivity {
 
 
         mActionBar = getSupportActionBar();
+        View view = getLayoutInflater().inflate(R.layout.note_actionbar, null);
+
+        mActionBar.setDisplayShowTitleEnabled(false);
+        mActionBar.setCustomView(view);
+        //ab.setDisplayOptions(ActionBar.DISPLAY_SHOW_CUSTOM);
+        mActionBar.setDisplayShowCustomEnabled(true);
         mNoteTitle = (EditText) mActionBar.getCustomView().findViewById(R.id.noteName);
 
         // Or passed from the other activity
@@ -112,12 +118,6 @@ public class NoteActivity extends ActionBarActivity {
 
         mItemsListView.setCheeseList(mItems);
 
-        View view = getLayoutInflater().inflate(R.layout.note_actionbar, null);
-
-        mActionBar.setDisplayShowTitleEnabled(false);
-        mActionBar.setCustomView(view);
-        //ab.setDisplayOptions(ActionBar.DISPLAY_SHOW_CUSTOM);
-        mActionBar.setDisplayShowCustomEnabled(true);
     }
 
     private void fillData(Uri uri) {
@@ -186,7 +186,7 @@ public class NoteActivity extends ActionBarActivity {
 
     private void saveState()
     {
-        mItems.add(mNoteTitle.getText().toString());
+        mItems.add(0, mNoteTitle.getText().toString());
         mItems.addAll(mFinishedItems);
         String note = new JSONArray(mItems).toString();
         ArrayList<Integer> slashes = new ArrayList<>();
@@ -241,19 +241,19 @@ public class NoteActivity extends ActionBarActivity {
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
-//        int id = item.getItemId();
-//
-//        //noinspection SimplifiableIfStatement
-//        if (id == R.id.addItem) {
-//            item.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-//                @Override
-//                public boolean onMenuItemClick(MenuItem item) {
-//                    addItem();
-//                    return false;
-//                }
-//            });
-//            return true;
-//        }
+        int id = item.getItemId();
+
+        //noinspection SimplifiableIfStatement
+        if (id == R.id.addItem) {
+            item.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+                @Override
+                public boolean onMenuItemClick(MenuItem item) {
+                    addItem();
+                    return false;
+                }
+            });
+            return true;
+        }
 
         return super.onOptionsItemSelected(item);
     }
