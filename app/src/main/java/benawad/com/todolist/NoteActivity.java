@@ -4,9 +4,9 @@ import android.app.AlertDialog;
 import android.content.ContentValues;
 import android.content.DialogInterface;
 import android.database.Cursor;
-import android.graphics.Paint;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.ActionBarActivity;
 import android.text.style.StrikethroughSpan;
 import android.util.Log;
@@ -19,12 +19,14 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 
 import java.util.ArrayList;
 
+import benawad.com.todolist.adapters.FinishedItemsArrayAdapter;
 import benawad.com.todolist.adapters.ItemsArrayAdapter;
 import benawad.com.todolist.contentprovider.NoteContentProvider;
 import benawad.com.todolist.database.NoteTable;
@@ -37,7 +39,7 @@ public class NoteActivity extends ActionBarActivity {
     public final static int UNSLASHED = 0;
     private static final StrikethroughSpan STRIKE_THROUGH_SPAN = new StrikethroughSpan();
     ItemsArrayAdapter mItemsArrayAdapter;
-    ItemsArrayAdapter mFinishedItemsArrayAdapter;
+    FinishedItemsArrayAdapter mFinishedItemsArrayAdapter;
     EditText mNewItemText;
     DynamicListView mItemsListView;
     ListView mFinishedItemsListView;
@@ -46,42 +48,45 @@ public class NoteActivity extends ActionBarActivity {
     //    FloatingActionButton fab;
     private Uri noteUri;
     public ArrayList<String> slashes;
+    EditText mNoteTitle;
+    ActionBar mActionBar;
 
     @Override
     protected void onCreate(Bundle bundle) {
         super.onCreate(bundle);
         setContentView(R.layout.activity_note);
-        mItems = new ArrayList<String>();
         slashes = new ArrayList<>();
-        mItemsArrayAdapter = new ItemsArrayAdapter(this, mItems, slashes);
-        mFinishedItems = new ArrayList<>();
-        mFinishedItemsArrayAdapter = new ItemsArrayAdapter(this, mFinishedItems, slashes);
-        mItemsListView = (DynamicListView) findViewById(R.id.itemsListView);
-        mFinishedItemsListView = (ListView) findViewById(R.id.finishedItems);
-        mItemsListView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
 
-//        fab = (FloatingActionButton) findViewById(R.id.addNewItem);
-//        fab.attachToListView(mItemsListView);
+        mFinishedItems = new ArrayList<>();
+        mFinishedItemsArrayAdapter = new FinishedItemsArrayAdapter(this, mFinishedItems, true);
+        mFinishedItemsListView = (ListView) findViewById(R.id.finishedItems);
+        mFinishedItemsListView.setAdapter(mFinishedItemsArrayAdapter);
+        mFinishedItemsListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                TextView item = (TextView) view.findViewById(R.id.itemText);
+                String text = item.getText().toString();
+                mFinishedItems.remove(text);
+                mItems.add(text);
+                mFinishedItemsArrayAdapter.notifyDataSetChanged();
+                mItemsArrayAdapter.notifyDataSetChanged();
+            }
+        });
+
+        mItems = new ArrayList<String>();
+        mItemsArrayAdapter = new ItemsArrayAdapter(this, mItems, false);
+        mItemsListView = (DynamicListView) findViewById(R.id.itemsListView);
+        mItemsListView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
         mItemsListView.setAdapter(mItemsArrayAdapter);
         mItemsListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 TextView item = (TextView) view.findViewById(R.id.itemText);
-                if (item.getPaintFlags() == 17) {
-                    item.setPaintFlags(item.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
-                } else {
-                    item.setPaintFlags(Paint.STRIKE_THRU_TEXT_FLAG);
-                }
-//                String text = item.getText().toString();
-//                if(text.contains("<strike>")){
-//                    int loc1 = text.indexOf("<strike>");
-//                    int loc2 = text.indexOf("</strike>");
-//                    item.setText(text.substring(loc1, loc2));
-//                }
-//                else{
-//                    item.setText(Html.fromHtml("<strike>" + text + "</strike>"));
-//                }
-                //Html.fromHtml("<h2>Title</h2><br><p>Description here</p>");
+                String text = item.getText().toString();
+                mItems.remove(text);
+                mFinishedItems.add(text);
+                mFinishedItemsArrayAdapter.notifyDataSetChanged();
+                mItemsArrayAdapter.notifyDataSetChanged();
             }
         });
 
@@ -90,6 +95,11 @@ public class NoteActivity extends ActionBarActivity {
         // check from the saved Instance
         noteUri = (bundle == null) ? null : (Uri) bundle
                 .getParcelable(NoteContentProvider.CONTENT_ITEM_TYPE);
+
+
+
+        mActionBar = getSupportActionBar();
+        mNoteTitle = (EditText) mActionBar.getCustomView().findViewById(R.id.noteName);
 
         // Or passed from the other activity
         if (extras != null) {
@@ -102,6 +112,12 @@ public class NoteActivity extends ActionBarActivity {
 
         mItemsListView.setCheeseList(mItems);
 
+        View view = getLayoutInflater().inflate(R.layout.note_actionbar, null);
+
+        mActionBar.setDisplayShowTitleEnabled(false);
+        mActionBar.setCustomView(view);
+        //ab.setDisplayOptions(ActionBar.DISPLAY_SHOW_CUSTOM);
+        mActionBar.setDisplayShowCustomEnabled(true);
     }
 
     private void fillData(Uri uri) {
@@ -124,13 +140,29 @@ public class NoteActivity extends ActionBarActivity {
 
             try {
                 JSONArray jsonArray = new JSONArray(sItems);
-                for (int i = 0; i < jsonArray.length(); i++) {
-                    mItems.add((String) jsonArray.get(i));
+
+                mNoteTitle.setText(jsonArray.get(0).toString());
+                ArrayList<String> temp = new ArrayList<>();
+                for(int i = 0; i < jsonArray.length(); i++){
+                    temp.add(jsonArray.get(i).toString());
                 }
+                temp.remove(0);
+                jsonArray = new JSONArray(temp);
+
+//                for (int i = 0; i < jsonArray.length(); i++) {
+//                    mItems.add((String) jsonArray.get(i));
+//                }
                 JSONArray slashesJsonArray = new JSONArray(sSlashes);
                 for (int i = 0; i < slashesJsonArray.length(); i++) {
                     slashes.add("" + slashesJsonArray.get(i));
+                    if(slashesJsonArray.get(i).equals(NoteActivity.UNSLASHED)){
+                        mItems.add((String) jsonArray.get(i));
+                    }
+                    else{
+                        mFinishedItems.add((String) jsonArray.get(i));
+                    }
                 }
+                mFinishedItemsArrayAdapter.notifyDataSetChanged();
                 mItemsArrayAdapter.notifyDataSetChanged();
             } catch (JSONException ignored) {
             }
@@ -152,19 +184,29 @@ public class NoteActivity extends ActionBarActivity {
         saveState();
     }
 
-    private void saveState() {
+    private void saveState()
+    {
+        mItems.add(mNoteTitle.getText().toString());
+        mItems.addAll(mFinishedItems);
         String note = new JSONArray(mItems).toString();
         ArrayList<Integer> slashes = new ArrayList<>();
 
-        for (int i = 0; i < mItemsListView.getChildCount(); i++) {
-            View row = mItemsListView.getChildAt(i);
-            TextView textView = (TextView) row.findViewById(R.id.itemText);
+//        for (int i = 0; i < mItemsListView.getChildCount(); i++) {
+//            View row = mItemsListView.getChildAt(i);
+//            TextView textView = (TextView) row.findViewById(R.id.itemText);
+//
+//            if (17 == textView.getPaintFlags()) {
+//                slashes.add(NoteActivity.SLASHED);
+//            } else {
+//                slashes.add(NoteActivity.UNSLASHED);
+//            }
+//        }
 
-            if (17 == textView.getPaintFlags()) {
-                slashes.add(NoteActivity.SLASHED);
-            } else {
-                slashes.add(NoteActivity.UNSLASHED);
-            }
+        for (int i = 0; i < mItemsListView.getChildCount(); i++) {
+            slashes.add(NoteActivity.UNSLASHED);
+        }
+        for (int i = 0; i < mFinishedItemsListView.getChildCount(); i++) {
+            slashes.add(NoteActivity.SLASHED);
         }
 
         String sSlashes = new JSONArray(slashes).toString();
@@ -199,19 +241,19 @@ public class NoteActivity extends ActionBarActivity {
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.addItem) {
-            item.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-                @Override
-                public boolean onMenuItemClick(MenuItem item) {
-                    addItem();
-                    return false;
-                }
-            });
-            return true;
-        }
+//        int id = item.getItemId();
+//
+//        //noinspection SimplifiableIfStatement
+//        if (id == R.id.addItem) {
+//            item.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+//                @Override
+//                public boolean onMenuItemClick(MenuItem item) {
+//                    addItem();
+//                    return false;
+//                }
+//            });
+//            return true;
+//        }
 
         return super.onOptionsItemSelected(item);
     }
@@ -241,9 +283,16 @@ public class NoteActivity extends ActionBarActivity {
         builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
-                mItems.add(mNewItemText.getText().toString());
-                slashes.add("" + NoteActivity.UNSLASHED);
-                mItemsArrayAdapter.notifyDataSetChanged();
+                String text = mNewItemText.getText().toString();
+                if (!mItems.contains(text) && !mItems.isEmpty()) {
+                    mItems.add(text);
+                    mItemsArrayAdapter.update();
+                    mItemsArrayAdapter.notifyDataSetChanged();
+
+                }
+                else{
+                    Toast.makeText(NoteActivity.this, text + " is already added.", Toast.LENGTH_LONG).show();
+                }
             }
         });
         builder.setNegativeButton("Cancel", null)
@@ -255,7 +304,7 @@ public class NoteActivity extends ActionBarActivity {
 
     public void deleteItem(int position) {
         mItems.remove(position);
-        slashes.remove(position);
+        mItemsArrayAdapter.update();
         mItemsArrayAdapter.notifyDataSetChanged();
     }
 
@@ -266,20 +315,37 @@ public class NoteActivity extends ActionBarActivity {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 mItems.set(position, mNewItemText.getText().toString());
+                mItemsArrayAdapter.update();
                 mItemsArrayAdapter.notifyDataSetChanged();
+            }
+        });
+        builder.show();
+
+    }
+
+    public void uncheckAll(View view) {
+        mItems.addAll(mFinishedItems);
+        mFinishedItems.clear();
+        mItemsArrayAdapter.notifyDataSetChanged();
+        mFinishedItemsArrayAdapter.notifyDataSetChanged();
+    }
+
+    public void deleteFinishedItem(int position) {
+        mFinishedItems.remove(position);
+        mFinishedItemsArrayAdapter.notifyDataSetChanged();
+    }
+
+    public void editFinishedItem(final int position) {
+        AlertDialog.Builder builder = getDialog();
+        mNewItemText.setText(mFinishedItems.get(position));
+        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                mFinishedItems.set(position, mNewItemText.getText().toString());
+                mFinishedItemsArrayAdapter.notifyDataSetChanged();
             }
         });
         builder.show();
     }
 
-    public void uncheckAll(View view) {
-        for (int i = 0; i < mItemsListView.getChildCount(); i++) {
-            View row = mItemsListView.getChildAt(i);
-            TextView textView = (TextView) row.findViewById(R.id.itemText);
-
-            textView.setPaintFlags(textView.getPaintFlags() & (~Paint.STRIKE_THRU_TEXT_FLAG));
-
-        }
-
-    }
 }

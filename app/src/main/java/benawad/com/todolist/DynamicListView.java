@@ -1,18 +1,4 @@
-/*
- * Copyright (C) 2013 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+
 
 package benawad.com.todolist;
 
@@ -42,28 +28,10 @@ import java.util.ArrayList;
 
 import benawad.com.todolist.adapters.ItemsArrayAdapter;
 
-/**
- * The dynamic listview is an extension of listview that supports cell dragging
- * and swapping.
- *
- * This layout is in charge of positioning the hover cell in the correct location
- * on the screen in response to user touch events. It uses the position of the
- * hover cell to determine when two cells should be swapped. If two cells should
- * be swapped, all the corresponding data set and layout changes are handled here.
- *
- * If no cell is selected, all the touch events are passed down to the listview
- * and behave normally. If one of the mItems in the listview experiences a
- * long press event, the contents of its current visible state are captured as
- * a bitmap and its visibility is set to INVISIBLE. A hover cell is then created and
- * added to this layout as an overlaying BitmapDrawable above the listview. Once the
- * hover cell is translated some distance to signify an item swap, a data set change
- * accompanied by animation takes place. When the user releases the hover cell,
- * it animates into its corresponding position in the listview.
- *
- * When the hover cell is either above or below the bounds of the listview, this
- * listview also scrolls on its own so as to reveal additional content.
- */
+
 public class DynamicListView extends ListView {
+
+    final static String TAG = DynamicListView.class.getSimpleName();
 
     private final int SMOOTH_SCROLL_AMOUNT_AT_EDGE = 15;
     private final int MOVE_DURATION = 150;
@@ -342,8 +310,13 @@ public class DynamicListView extends ListView {
 
             final int switchViewStartTop = switchView.getTop();
 
-            mobileView.setVisibility(View.VISIBLE);
-            switchView.setVisibility(View.INVISIBLE);
+           if (android.os.Build.VERSION.SDK_INT <= android.os.Build.VERSION_CODES.KITKAT){
+                mobileView.setVisibility(View.VISIBLE);
+                switchView.setVisibility(View.INVISIBLE);
+            } else{
+                mobileView.setVisibility(View.INVISIBLE);
+                switchView.setVisibility(View.VISIBLE);
+            }
 
             updateNeighborViewsForID(mMobileItemId);
 

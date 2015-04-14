@@ -49,6 +49,18 @@ public class MainActivity extends ActionBarActivity implements
                 startActivity(i);
             }
         });
+
+        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                Uri uri = Uri.parse(NoteContentProvider.CONTENT_URI + "/"
+                        + id);
+                getContentResolver().delete(uri, null, null);
+                fillData();
+                return false;
+            }
+        });
+
     }
 
     private void fillData() {
