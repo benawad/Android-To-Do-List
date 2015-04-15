@@ -284,7 +284,7 @@ public class NoteActivity extends ActionBarActivity {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 String text = mNewItemText.getText().toString();
-                if (!mItems.contains(text) && !mItems.isEmpty()) {
+                if (!mItems.contains(text) && !text.isEmpty()) {
                     mItems.add(text);
                     mItemsArrayAdapter.update();
                     mItemsArrayAdapter.notifyDataSetChanged();

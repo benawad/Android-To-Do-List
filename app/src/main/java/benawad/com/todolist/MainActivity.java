@@ -8,6 +8,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
+import android.support.v7.widget.CardView;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -17,12 +18,16 @@ import android.widget.SimpleCursorAdapter;
 
 import com.melnykov.fab.FloatingActionButton;
 
+import java.util.ArrayList;
+
 import benawad.com.todolist.contentprovider.NoteContentProvider;
 import benawad.com.todolist.database.NoteTable;
 
 
 public class MainActivity extends ActionBarActivity implements
         LoaderManager.LoaderCallbacks<Cursor> {
+
+    public static final String TAG = MainActivity.class.getSimpleName();
 
     private static final int ACTIVITY_CREATE = 0;
     private static final int ACTIVITY_EDIT = 1;
@@ -76,6 +81,11 @@ public class MainActivity extends ActionBarActivity implements
                 to, 0);
 
         listView.setAdapter(adapter);
+    }
+
+    private void makeCardView(String title, ArrayList<String> list){
+        CardView cv = new CardView(this);
+
     }
 
     @Override
