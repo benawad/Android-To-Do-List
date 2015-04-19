@@ -1,19 +1,19 @@
 package benawad.com.todolist;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ContentValues;
 import android.content.DialogInterface;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.v7.app.ActionBar;
-import android.support.v7.app.ActionBarActivity;
 import android.text.style.StrikethroughSpan;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -32,7 +32,7 @@ import benawad.com.todolist.contentprovider.NoteContentProvider;
 import benawad.com.todolist.database.NoteTable;
 
 
-public class NoteActivity extends ActionBarActivity {
+public class NoteActivity extends Activity {
 
     private final static String TAG = NoteActivity.class.getSimpleName();
     public final static int SLASHED = 1;
@@ -49,7 +49,7 @@ public class NoteActivity extends ActionBarActivity {
     private Uri noteUri;
     public ArrayList<String> slashes;
     EditText mNoteTitle;
-    ActionBar mActionBar;
+    android.app.ActionBar mActionBar;
 
     @Override
     protected void onCreate(Bundle bundle) {
@@ -98,7 +98,7 @@ public class NoteActivity extends ActionBarActivity {
 
 
 
-        mActionBar = getSupportActionBar();
+        mActionBar = getActionBar();
         View view = getLayoutInflater().inflate(R.layout.note_actionbar, null);
 
         mActionBar.setDisplayShowTitleEnabled(false);
@@ -248,7 +248,7 @@ public class NoteActivity extends ActionBarActivity {
             item.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
                 @Override
                 public boolean onMenuItemClick(MenuItem item) {
-                    addItem();
+                    addItem(null);
                     return false;
                 }
             });
@@ -258,10 +258,13 @@ public class NoteActivity extends ActionBarActivity {
         return super.onOptionsItemSelected(item);
     }
 
-    public void addItem() {
+    public void addItem(View v) {
 
         if (mItems.size() < 100) {
-            getDialog().show();
+            AlertDialog alertToShow = getDialog().create();
+            alertToShow.getWindow().setSoftInputMode(
+                    WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
+            alertToShow.show();
         } else {
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle("Max Items")

@@ -1,5 +1,8 @@
 package benawad.com.todolist;
 
+import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.app.ActivityOptions;
 import android.app.LoaderManager;
 import android.content.CursorLoader;
 import android.content.Intent;
@@ -7,8 +10,9 @@ import android.content.Loader;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.v7.app.ActionBarActivity;
-import android.support.v7.widget.CardView;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -19,12 +23,14 @@ import android.widget.SimpleCursorAdapter;
 import com.melnykov.fab.FloatingActionButton;
 
 import java.util.ArrayList;
+import java.util.List;
 
+import benawad.com.todolist.adapters.CardViewAdapter;
 import benawad.com.todolist.contentprovider.NoteContentProvider;
 import benawad.com.todolist.database.NoteTable;
 
 
-public class MainActivity extends ActionBarActivity implements
+public class MainActivity extends Activity implements
         LoaderManager.LoaderCallbacks<Cursor> {
 
     public static final String TAG = MainActivity.class.getSimpleName();
@@ -35,11 +41,23 @@ public class MainActivity extends ActionBarActivity implements
     private SimpleCursorAdapter adapter;
     private ListView listView;
     private FloatingActionButton fab;
+    RecyclerView recListLeft;
+    RecyclerView recListRight;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        recListLeft = (RecyclerView) findViewById(R.id.cardList_left);
+        recListRight = (RecyclerView) findViewById(R.id.cardList_right);
+        LinearLayoutManager llmLeft = new LinearLayoutManager(this);
+        LinearLayoutManager llmRight = new LinearLayoutManager(this);
+        llmLeft.setOrientation(LinearLayoutManager.VERTICAL);
+        llmRight.setOrientation(LinearLayoutManager.VERTICAL);
+        recListLeft.setLayoutManager(llmLeft);
+        recListRight.setLayoutManager(llmRight);
+
         listView = (ListView) findViewById(R.id.home_list);
         fab = (FloatingActionButton) findViewById(R.id.addNewNote);
         fab.attachToListView(listView);
@@ -77,15 +95,11 @@ public class MainActivity extends ActionBarActivity implements
         int[] to = new int[] { R.id.label };
 
         getLoaderManager().initLoader(0, null, this);
+
         adapter = new SimpleCursorAdapter(this, R.layout.homelist_row, null, from,
                 to, 0);
 
         listView.setAdapter(adapter);
-    }
-
-    private void makeCardView(String title, ArrayList<String> list){
-        CardView cv = new CardView(this);
-
     }
 
     @Override
@@ -110,15 +124,22 @@ public class MainActivity extends ActionBarActivity implements
         return super.onOptionsItemSelected(item);
     }
 
+    @SuppressLint("NewApi")
     public void toNoteActivity(View view) {
         Intent intent = new Intent(this, NoteActivity.class);
         intent.putExtra("source", "newNote");
-        startActivity(intent);
+        if(Integer.valueOf(android.os.Build.VERSION.SDK_INT) >= 21) {
+            startActivity(intent, ActivityOptions
+                    .makeSceneTransitionAnimation(this).toBundle());
+        }
+        else{
+            startActivity(intent);
+        }
     }
 
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
-        String[] projection = { NoteTable.COLUMN_ID, NoteTable.COLUMN_ITEMS };
+        String[] projection = { NoteTable.COLUMN_ID, NoteTable.COLUMN_ITEMS, NoteTable.COLUMN_SLASHED };
         CursorLoader cursorLoader = new CursorLoader(this,
                 NoteContentProvider.CONTENT_URI, projection, null, null, null);
         return cursorLoader;
@@ -127,10 +148,58 @@ public class MainActivity extends ActionBarActivity implements
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
         adapter.swapCursor(data);
+
+//        recListLeft.setHasFixedSize(true);
+//        recListRight.setHasFixedSize(true);
+
+        List<String> mainlist = new ArrayList<String>();
+        List<Integer> mainColId = new ArrayList<Integer>();
+        List<String> mainSlashes = new ArrayList<String>();
+        List<String> leftList = new ArrayList<String>();
+        List<Integer> leftColId = new ArrayList<Integer>();
+        List<String> leftSlashes = new ArrayList<String>();
+        List<String> rightList = new ArrayList<String>();
+        List<Integer> rightColId = new ArrayList<Integer>();
+        List<String> rightSlashes = new ArrayList<String>();
+
+        if(data != null) {
+            Log.v(TAG, "count" + data.getCount());
+            for (int c = 0; c < data.getCount(); c++) {
+                data.moveToNext();
+                String sItems = data.getString(data
+                        .getColumnIndexOrThrow(NoteTable.COLUMN_ITEMS));
+                String sColId = data.getString(data.getColumnIndexOrThrow(NoteTable.COLUMN_ID));
+
+                String sSlashes = data.getString(data.getColumnIndexOrThrow(NoteTable.COLUMN_SLASHED));
+
+                mainSlashes.add(sSlashes);
+                mainColId.add(Integer.parseInt(sColId));
+                mainlist.add(sItems);
+            }
+        }
+        for (int i = 0; i < mainlist.size(); i++) {
+            if (i % 2 == 0) {
+                leftList.add(mainlist.get(i));
+                leftColId.add(mainColId.get(i));
+                leftSlashes.add(mainSlashes.get(i));
+            } else {
+                rightList.add(mainlist.get(i));
+                rightColId.add(mainColId.get(i));
+                rightSlashes.add(mainSlashes.get(i));
+            }
+        }
+
+        CardViewAdapter leftCardViewAdapter = new CardViewAdapter(leftList, this, leftColId, leftSlashes);
+        CardViewAdapter RightCardViewAdapter = new CardViewAdapter(rightList, this, rightColId, rightSlashes);
+
+        recListLeft.setAdapter(leftCardViewAdapter);
+        recListRight.setAdapter(RightCardViewAdapter);
+
     }
 
     @Override
     public void onLoaderReset(Loader<Cursor> loader) {
+        Log.v(TAG, "onLoaderReset method called");
         adapter.swapCursor(null);
     }
 }
