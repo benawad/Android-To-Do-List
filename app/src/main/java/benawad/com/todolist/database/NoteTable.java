@@ -12,6 +12,7 @@ public class NoteTable {
     public static final String COLUMN_ID = "_id";
     public static final String COLUMN_ITEMS = "items";
     public static final String COLUMN_SLASHED = "slashed";
+    public static final String COLUMN_NOTE_TITLE = "noteTitle";
 
     // Database creation SQL statement
     private static final String DATABASE_CREATE = "create table "
@@ -19,6 +20,7 @@ public class NoteTable {
             + "("
             + COLUMN_ID + " integer primary key autoincrement, "
             + COLUMN_SLASHED + " text not null, "
+            + COLUMN_NOTE_TITLE + " text not null, "
             + COLUMN_ITEMS
             + " text not null"
             + ");";

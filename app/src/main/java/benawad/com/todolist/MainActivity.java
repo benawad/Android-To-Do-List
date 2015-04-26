@@ -1,26 +1,32 @@
 package benawad.com.todolist;
 
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.app.ActivityOptions;
 import android.app.LoaderManager;
 import android.content.CursorLoader;
 import android.content.Intent;
 import android.content.Loader;
 import android.database.Cursor;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.CardView;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ListView;
-import android.widget.SimpleCursorAdapter;
+import android.widget.LinearLayout;
+import android.widget.Toast;
 
 import com.melnykov.fab.FloatingActionButton;
+
+import org.json.JSONArray;
+import org.json.JSONException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,76 +36,165 @@ import benawad.com.todolist.contentprovider.NoteContentProvider;
 import benawad.com.todolist.database.NoteTable;
 
 
-public class MainActivity extends Activity implements
+public class MainActivity extends AppCompatActivity implements
         LoaderManager.LoaderCallbacks<Cursor> {
 
     public static final String TAG = MainActivity.class.getSimpleName();
 
+    private static final int MAX_NOTES = 200;
     private static final int ACTIVITY_CREATE = 0;
     private static final int ACTIVITY_EDIT = 1;
     private static final int DELETE_ID = Menu.FIRST + 1;
-    private SimpleCursorAdapter adapter;
-    private ListView listView;
     private FloatingActionButton fab;
-    RecyclerView recListLeft;
-    RecyclerView recListRight;
+    RecyclerView recList;
+    public int priorSelectedNotePosition = -13;
+    public int prevCol = -2;
+    public int currCol = -9;
+    public int selectedNotePosition = -17;
+    public int selectedId = -1;
+    public Drawable cardviewBackground;
+    public CardViewAdapter mCardViewAdapter;
+    public ActionBar mActionBar;
+    public boolean noneSelected = true;
+    public List<List<String>> mNoteList;
+    public List<List<String>> mTitleList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        recListLeft = (RecyclerView) findViewById(R.id.cardList_left);
-        recListRight = (RecyclerView) findViewById(R.id.cardList_right);
-        LinearLayoutManager llmLeft = new LinearLayoutManager(this);
-        LinearLayoutManager llmRight = new LinearLayoutManager(this);
-        llmLeft.setOrientation(LinearLayoutManager.VERTICAL);
-        llmRight.setOrientation(LinearLayoutManager.VERTICAL);
-        recListLeft.setLayoutManager(llmLeft);
-        recListRight.setLayoutManager(llmRight);
+        recList = (RecyclerView) findViewById(R.id.cardList_left);
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this);
+        layoutManager.setOrientation(LinearLayoutManager.VERTICAL);
+        recList.setLayoutManager(layoutManager);
 
-        listView = (ListView) findViewById(R.id.home_list);
         fab = (FloatingActionButton) findViewById(R.id.addNewNote);
-        fab.attachToListView(listView);
-        fillData();
-        //registerForContextMenu(listView);
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Intent i = new Intent(MainActivity.this, NoteActivity.class);
-                Uri noteUri = Uri.parse(NoteContentProvider.CONTENT_URI + "/" + id);
-                i.putExtra(NoteContentProvider.CONTENT_ITEM_TYPE, noteUri);
-                startActivity(i);
-            }
-        });
-
-        listView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-            @Override
-            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-                Uri uri = Uri.parse(NoteContentProvider.CONTENT_URI + "/"
-                        + id);
-                getContentResolver().delete(uri, null, null);
-                fillData();
-                return false;
-            }
-        });
-
+        fab.attachToRecyclerView(recList);
+        getLoaderManager().initLoader(0, null, this);
     }
 
-    private void fillData() {
+    public void deleteIcon(View v){
+        deleteNote(selectedId);
+    }
 
-        // Fields from the database (projection)
-        // Must include the _id column for the adapter to work
-        String[] from = new String[] { NoteTable.COLUMN_ITEMS };
-        // Fields on the UI to which we map
-        int[] to = new int[] { R.id.label };
+    public void backIcon(View v){
+        clearFocus();
+        actionBarOff(null);
+        noneSelected = true;
+    }
 
+    public void deleteNote(int id) {
+        Uri uri = Uri.parse(NoteContentProvider.CONTENT_URI + "/"
+                + id);
+        getContentResolver().delete(uri, null, null);
         getLoaderManager().initLoader(0, null, this);
+        actionBarOff(null);
+        noneSelected = true;
+    }
 
-        adapter = new SimpleCursorAdapter(this, R.layout.homelist_row, null, from,
-                to, 0);
+    public void noteFocused(int col){
+        currCol = col;
+        LinearLayout linearLayout = (LinearLayout) recList.getChildAt(selectedNotePosition);
+        if(col == 1){
+            final CardView one = (CardView) linearLayout.findViewById(R.id.card_view);
+            if(selectedNotePosition == priorSelectedNotePosition && col == prevCol && !noneSelected){
+                clearFocus();
+                one.setEnabled(false);
+                one.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        one.setEnabled(true);
+                    }
+                }, 300);
+                actionBarOff(null);
+                noneSelected = true;
+            }
+            else {
+                clearFocus();
+                one.setBackgroundDrawable(
+                        getResources().getDrawable(R.drawable.highlight_cardview));
+                one.setEnabled(false);
+                one.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        one.setEnabled(true);
+                    }
+                }, 300);
+                actionBarOn();
+                noneSelected = false;
+            }
+        }else{
+            final CardView two = (CardView) linearLayout.findViewById(R.id.card_view2);
+            if(selectedNotePosition == priorSelectedNotePosition && col == prevCol && !noneSelected) {
+                clearFocus();
+                two.setEnabled(false);
+                two.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        two.setEnabled(true);
+                    }
+                }, 400);
+                actionBarOff(null);
+                noneSelected = true;
+            }
+            else {
+                clearFocus();
+                two.setBackgroundDrawable(
+                        getResources().getDrawable(R.drawable.highlight_cardview));
+                two.setEnabled(false);
+                two.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        two.setEnabled(true);
+                    }
+                }, 400);
+                actionBarOn();
+                noneSelected = false;
+            }
+        }
 
-        listView.setAdapter(adapter);
+        priorSelectedNotePosition = selectedNotePosition;
+        prevCol = col;
+    }
+
+    public void clearFocus(){
+        for(int i = 0; i < recList.getChildCount(); i++){
+            LinearLayout linearLayout = (LinearLayout) recList.getChildAt(i);
+            CardView one = (CardView) linearLayout.findViewById(R.id.card_view);
+            CardView two = (CardView) linearLayout.findViewById(R.id.card_view2);
+            if(cardviewBackground == null){
+                cardviewBackground = one.getBackground();
+            }
+            one.setBackgroundDrawable(cardviewBackground);
+            if(two != null) {
+                two.setBackgroundDrawable(cardviewBackground);
+            }
+        }
+    }
+
+    public void actionBarOn(){
+        if(mActionBar == null) {
+            mActionBar = getSupportActionBar();
+        }
+        View view = getLayoutInflater().inflate(R.layout.highlight_actionbar, null);
+        if(mActionBar.getCustomView() == null) {
+            mActionBar.setCustomView(view);
+        }
+        mActionBar.setDisplayShowCustomEnabled(true);
+    }
+
+    public void actionBarOff(View v){
+        if(mActionBar == null) {
+            mActionBar = getSupportActionBar();
+        }
+        Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                mActionBar.setDisplayShowCustomEnabled(false);
+            }
+        }, 150);
     }
 
     @Override
@@ -116,90 +211,144 @@ public class MainActivity extends Activity implements
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
         return super.onOptionsItemSelected(item);
     }
 
     @SuppressLint("NewApi")
     public void toNoteActivity(View view) {
-        Intent intent = new Intent(this, NoteActivity.class);
-        intent.putExtra("source", "newNote");
-        if(Integer.valueOf(android.os.Build.VERSION.SDK_INT) >= 21) {
-            startActivity(intent, ActivityOptions
-                    .makeSceneTransitionAnimation(this).toBundle());
+        if(((recList.getChildCount() * 2) - 1 > MAX_NOTES) && view != null ) {
+            Toast.makeText(this, "You cannot have more than " + MAX_NOTES + " to do lists", Toast.LENGTH_LONG).show();
+        }else{
+            Intent intent = new Intent(this, NoteActivity.class);
+            intent.putExtra("source", "newNote");
+            if (Integer.valueOf(android.os.Build.VERSION.SDK_INT) >= 21) {
+                startActivity(intent, ActivityOptions
+                        .makeSceneTransitionAnimation(this).toBundle());
+            } else {
+                startActivity(intent);
+            }
         }
-        else{
-            startActivity(intent);
-        }
+
     }
 
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
-        String[] projection = { NoteTable.COLUMN_ID, NoteTable.COLUMN_ITEMS, NoteTable.COLUMN_SLASHED };
+        String[] projection = {NoteTable.COLUMN_ID, NoteTable.COLUMN_ITEMS, NoteTable.COLUMN_SLASHED, NoteTable.COLUMN_NOTE_TITLE};
         CursorLoader cursorLoader = new CursorLoader(this,
                 NoteContentProvider.CONTENT_URI, projection, null, null, null);
         return cursorLoader;
     }
 
+    public void shareButton(View v){
+        shareIntent(noteToString(selectedNotePosition, currCol));
+    }
+
+    public String noteToString(int pos, int col){
+        int index = (col==1) ? 0 : 1;
+        String title = mTitleList.get(pos).get(index);
+        String text = title + ":\n\n";
+        JSONArray jsonArray;
+        try {
+            jsonArray = new JSONArray(mNoteList.get(pos).get(index));
+            for(int i = 0; i < jsonArray.length(); i++){
+                text += jsonArray.get(i) + "\n";
+            }
+        } catch (JSONException ignored) {}
+        return text;
+    }
+
+
+    public void shareIntent(String textToShare){
+        Intent shareIntent = new Intent();
+        shareIntent.setAction(Intent.ACTION_SEND);
+        shareIntent.setType("text/plain");
+        shareIntent.putExtra(Intent.EXTRA_TEXT, textToShare);
+        startActivity(Intent.createChooser(shareIntent, "How do you want to share?"));
+    }
+
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
-        adapter.swapCursor(data);
+        mNoteList = new ArrayList<List<String>>();
+        List<List<Integer>> mainColId = new ArrayList<>();
+        List<List<String>> mainSlashes = new ArrayList<>();
+        mTitleList = new ArrayList<>();
 
-//        recListLeft.setHasFixedSize(true);
-//        recListRight.setHasFixedSize(true);
+        List<String> oneTitles = new ArrayList<>();
+        List<String> oneList = new ArrayList<>();
+        List<Integer> oneListId = new ArrayList<>();
+        List<String> oneListSlashes = new ArrayList<>();
 
-        List<String> mainlist = new ArrayList<String>();
-        List<Integer> mainColId = new ArrayList<Integer>();
-        List<String> mainSlashes = new ArrayList<String>();
-        List<String> leftList = new ArrayList<String>();
-        List<Integer> leftColId = new ArrayList<Integer>();
-        List<String> leftSlashes = new ArrayList<String>();
-        List<String> rightList = new ArrayList<String>();
-        List<Integer> rightColId = new ArrayList<Integer>();
-        List<String> rightSlashes = new ArrayList<String>();
-
-        if(data != null) {
-            Log.v(TAG, "count" + data.getCount());
+        if (data != null) {
+            data.moveToFirst();
             for (int c = 0; c < data.getCount(); c++) {
-                data.moveToNext();
-                String sItems = data.getString(data
-                        .getColumnIndexOrThrow(NoteTable.COLUMN_ITEMS));
-                String sColId = data.getString(data.getColumnIndexOrThrow(NoteTable.COLUMN_ID));
+                try {
+                    String sItems = data.getString(
+                            data.getColumnIndexOrThrow(NoteTable.COLUMN_ITEMS));
 
-                String sSlashes = data.getString(data.getColumnIndexOrThrow(NoteTable.COLUMN_SLASHED));
+                    String sColId = data.getString(
+                            data.getColumnIndexOrThrow(NoteTable.COLUMN_ID));
 
-                mainSlashes.add(sSlashes);
-                mainColId.add(Integer.parseInt(sColId));
-                mainlist.add(sItems);
+                    String sSlashes = data.getString(
+                            data.getColumnIndexOrThrow(NoteTable.COLUMN_SLASHED));
+
+                    String sTitles = data.getString(
+                            data.getColumnIndexOrThrow(NoteTable.COLUMN_NOTE_TITLE));
+
+                    oneTitles.add(sTitles);
+                    oneListSlashes.add(sSlashes);
+                    oneListId.add(Integer.parseInt(sColId));
+                    oneList.add(sItems);
+                    data.moveToNext();
+                }
+                catch(Exception e) {
+                    Log.v(TAG, "Exception caught:", e);
+                }
             }
         }
-        for (int i = 0; i < mainlist.size(); i++) {
-            if (i % 2 == 0) {
-                leftList.add(mainlist.get(i));
-                leftColId.add(mainColId.get(i));
-                leftSlashes.add(mainSlashes.get(i));
-            } else {
-                rightList.add(mainlist.get(i));
-                rightColId.add(mainColId.get(i));
-                rightSlashes.add(mainSlashes.get(i));
+
+        int rows;
+
+        if (oneList.size() % 2 == 0) {
+            rows = oneList.size() / 2;
+        } else {
+            rows = (oneList.size() / 2) + 1;
+        }
+
+        for (int i = 0; i < rows; i++) {
+            mTitleList.add(new ArrayList<String>());
+            mNoteList.add(new ArrayList<String>());
+            mainColId.add(new ArrayList<Integer>());
+            mainSlashes.add(new ArrayList<String>());
+        }
+
+        for (int i = 0, b = 0; i < oneList.size(); i += 2, b++) {
+            mNoteList.get(b).add(oneList.get(i));
+            if (oneList.size() > i + 1) {
+                mNoteList.get(b).add(oneList.get(i + 1));
+            }
+            mainColId.get(b).add(oneListId.get(i));
+            if (oneListId.size() > i + 1) {
+                mainColId.get(b).add(oneListId.get(i + 1));
+            }
+            mainSlashes.get(b).add(oneListSlashes.get(i));
+            if (oneListSlashes.size() > i + 1) {
+                mainSlashes.get(b).add(oneListSlashes.get(i + 1));
+            }
+            mTitleList.get(b).add(oneTitles.get(i));
+            if (oneTitles.size() > i + 1) {
+                mTitleList.get(b).add(oneTitles.get(i + 1));
             }
         }
 
-        CardViewAdapter leftCardViewAdapter = new CardViewAdapter(leftList, this, leftColId, leftSlashes);
-        CardViewAdapter RightCardViewAdapter = new CardViewAdapter(rightList, this, rightColId, rightSlashes);
+        Log.v(TAG, "list=" + oneList.toString());
 
-        recListLeft.setAdapter(leftCardViewAdapter);
-        recListRight.setAdapter(RightCardViewAdapter);
+        mCardViewAdapter = new CardViewAdapter(mNoteList, this, mainColId, mainSlashes, mTitleList);
+        recList.setAdapter(mCardViewAdapter);
 
     }
 
     @Override
     public void onLoaderReset(Loader<Cursor> loader) {
         Log.v(TAG, "onLoaderReset method called");
-        adapter.swapCursor(null);
     }
 }

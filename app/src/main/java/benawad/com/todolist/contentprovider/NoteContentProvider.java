@@ -173,7 +173,7 @@ public class NoteContentProvider extends ContentProvider {
     }
 
     private void checkColumns(String[] projection) {
-        String[] available = { NoteTable.COLUMN_ITEMS, NoteTable.COLUMN_SLASHED,
+        String[] available = { NoteTable.COLUMN_ITEMS, NoteTable.COLUMN_SLASHED, NoteTable.COLUMN_NOTE_TITLE,
                 NoteTable.COLUMN_ID };
         if (projection != null) {
             HashSet<String> requestedColumns = new HashSet<String>(Arrays.asList(projection));

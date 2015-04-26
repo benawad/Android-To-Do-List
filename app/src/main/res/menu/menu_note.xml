@@ -3,10 +3,4 @@
       xmlns:tools="http://schemas.android.com/tools"
       tools:context="benawad.com.todolist.NoteActivity">
 
-    <item
-        android:title="Add Item"
-        android:id="@+id/addItem"
-        android:icon="@mipmap/ic_add_circle_outline_white_36dp"
-        app:showAsAction="never" />
-
 </menu>

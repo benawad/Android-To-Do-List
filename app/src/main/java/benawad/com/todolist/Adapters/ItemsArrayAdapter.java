@@ -119,7 +119,7 @@ public class ItemsArrayAdapter extends ArrayAdapter<String> {
 
     @Override
     public boolean hasStableIds() {
-        return true;
+        return android.os.Build.VERSION.SDK_INT < 20;
     }
 
 }

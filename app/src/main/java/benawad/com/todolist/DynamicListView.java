@@ -310,13 +310,16 @@ public class DynamicListView extends ListView {
 
             final int switchViewStartTop = switchView.getTop();
 
-           if (android.os.Build.VERSION.SDK_INT <= android.os.Build.VERSION_CODES.KITKAT){
-                mobileView.setVisibility(View.VISIBLE);
-                switchView.setVisibility(View.INVISIBLE);
-            } else{
-                mobileView.setVisibility(View.INVISIBLE);
-                switchView.setVisibility(View.VISIBLE);
-            }
+ //          if (android.os.Build.VERSION.SDK_INT <= android.os.Build.VERSION_CODES.KITKAT){
+//                mobileView.setVisibility(View.VISIBLE);
+//                switchView.setVisibility(View.INVISIBLE);
+//            } else{
+//                mobileView.setVisibility(View.INVISIBLE);
+//                switchView.setVisibility(View.VISIBLE);
+//            }
+
+            mobileView.setVisibility(View.VISIBLE);
+            switchView.setVisibility(View.INVISIBLE);
 
             updateNeighborViewsForID(mMobileItemId);
 

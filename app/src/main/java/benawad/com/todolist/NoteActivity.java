@@ -1,19 +1,22 @@
 package benawad.com.todolist;
 
-import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.ContentUris;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
-import android.text.style.StrikethroughSpan;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.LinearLayout;
@@ -32,12 +35,11 @@ import benawad.com.todolist.contentprovider.NoteContentProvider;
 import benawad.com.todolist.database.NoteTable;
 
 
-public class NoteActivity extends Activity {
+public class NoteActivity extends AppCompatActivity {
 
     private final static String TAG = NoteActivity.class.getSimpleName();
     public final static int SLASHED = 1;
     public final static int UNSLASHED = 0;
-    private static final StrikethroughSpan STRIKE_THROUGH_SPAN = new StrikethroughSpan();
     ItemsArrayAdapter mItemsArrayAdapter;
     FinishedItemsArrayAdapter mFinishedItemsArrayAdapter;
     EditText mNewItemText;
@@ -49,7 +51,7 @@ public class NoteActivity extends Activity {
     private Uri noteUri;
     public ArrayList<String> slashes;
     EditText mNoteTitle;
-    android.app.ActionBar mActionBar;
+    ActionBar mActionBar;
 
     @Override
     protected void onCreate(Bundle bundle) {
@@ -96,9 +98,7 @@ public class NoteActivity extends Activity {
         noteUri = (bundle == null) ? null : (Uri) bundle
                 .getParcelable(NoteContentProvider.CONTENT_ITEM_TYPE);
 
-
-
-        mActionBar = getActionBar();
+        mActionBar = getSupportActionBar();
         View view = getLayoutInflater().inflate(R.layout.note_actionbar, null);
 
         mActionBar.setDisplayShowTitleEnabled(false);
@@ -109,21 +109,22 @@ public class NoteActivity extends Activity {
 
         // Or passed from the other activity
         if (extras != null) {
-            noteUri = extras
-                    .getParcelable(NoteContentProvider.CONTENT_ITEM_TYPE);
-
+            if(extras.getParcelable(NoteContentProvider.CONTENT_ITEM_TYPE) != null) {
+                noteUri = extras
+                        .getParcelable(NoteContentProvider.CONTENT_ITEM_TYPE);
+            }
             fillData(noteUri);
 
         }
 
         mItemsListView.setCheeseList(mItems);
-
     }
 
     private void fillData(Uri uri) {
 
-        String[] projection = {NoteTable.COLUMN_ITEMS, NoteTable.COLUMN_SLASHED};
+        String[] projection = {NoteTable.COLUMN_ITEMS, NoteTable.COLUMN_SLASHED, NoteTable.COLUMN_NOTE_TITLE};
         Cursor cursor = null;
+
         try {
             cursor = getContentResolver().query(uri, projection, null, null,
                     null);
@@ -138,20 +139,13 @@ public class NoteActivity extends Activity {
 
             String sSlashes = cursor.getString(cursor.getColumnIndexOrThrow(NoteTable.COLUMN_SLASHED));
 
+            String title = cursor.getString(cursor.getColumnIndexOrThrow(NoteTable.COLUMN_NOTE_TITLE));
+
             try {
                 JSONArray jsonArray = new JSONArray(sItems);
 
-                mNoteTitle.setText(jsonArray.get(0).toString());
-                ArrayList<String> temp = new ArrayList<>();
-                for(int i = 0; i < jsonArray.length(); i++){
-                    temp.add(jsonArray.get(i).toString());
-                }
-                temp.remove(0);
-                jsonArray = new JSONArray(temp);
+                mNoteTitle.setText(title);
 
-//                for (int i = 0; i < jsonArray.length(); i++) {
-//                    mItems.add((String) jsonArray.get(i));
-//                }
                 JSONArray slashesJsonArray = new JSONArray(sSlashes);
                 for (int i = 0; i < slashesJsonArray.length(); i++) {
                     slashes.add("" + slashesJsonArray.get(i));
@@ -186,21 +180,9 @@ public class NoteActivity extends Activity {
 
     private void saveState()
     {
-        mItems.add(0, mNoteTitle.getText().toString());
         mItems.addAll(mFinishedItems);
         String note = new JSONArray(mItems).toString();
         ArrayList<Integer> slashes = new ArrayList<>();
-
-//        for (int i = 0; i < mItemsListView.getChildCount(); i++) {
-//            View row = mItemsListView.getChildAt(i);
-//            TextView textView = (TextView) row.findViewById(R.id.itemText);
-//
-//            if (17 == textView.getPaintFlags()) {
-//                slashes.add(NoteActivity.SLASHED);
-//            } else {
-//                slashes.add(NoteActivity.UNSLASHED);
-//            }
-//        }
 
         for (int i = 0; i < mItemsListView.getChildCount(); i++) {
             slashes.add(NoteActivity.UNSLASHED);
@@ -211,9 +193,6 @@ public class NoteActivity extends Activity {
 
         String sSlashes = new JSONArray(slashes).toString();
 
-        // only save if either summary or description
-        // is available
-
         if (mItems.isEmpty()) {
             return;
         }
@@ -222,8 +201,25 @@ public class NoteActivity extends Activity {
         values.put(NoteTable.COLUMN_ITEMS, note);
         values.put(NoteTable.COLUMN_SLASHED, sSlashes);
 
+        String noteTitle = mNoteTitle.getText().toString();
+        if(noteTitle.isEmpty()){
+            noteTitle = "Untitled";
+        }
+
+        values.put(NoteTable.COLUMN_NOTE_TITLE, noteTitle);
         if (noteUri == null) {
             noteUri = getContentResolver().insert(NoteContentProvider.CONTENT_URI, values);
+            String firstPart = NoteContentProvider.CONTENT_URI.toString();
+            Long id = ContentUris.parseId(noteUri);
+            String correctURIs = firstPart + "/" + id;
+            Uri correctedUri = Uri.parse(correctURIs);
+            try{
+                getContentResolver().update(noteUri, values, null, null);
+            }
+            catch (Exception e){
+                noteUri = correctedUri;
+            }
+
         } else {
             getContentResolver().update(noteUri, values, null, null);
         }
@@ -244,16 +240,16 @@ public class NoteActivity extends Activity {
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.addItem) {
-            item.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-                @Override
-                public boolean onMenuItemClick(MenuItem item) {
-                    addItem(null);
-                    return false;
-                }
-            });
-            return true;
-        }
+//        if (id == R.id.addItem) {
+//            item.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+//                @Override
+//                public boolean onMenuItemClick(MenuItem item) {
+//                    addItem(null);
+//                    return false;
+//                }
+//            });
+//            return true;
+//        }
 
         return super.onOptionsItemSelected(item);
     }
@@ -286,23 +282,34 @@ public class NoteActivity extends Activity {
         builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
+                closeKeyboard();
                 String text = mNewItemText.getText().toString();
                 if (!mItems.contains(text) && !text.isEmpty()) {
                     mItems.add(text);
                     mItemsArrayAdapter.update();
                     mItemsArrayAdapter.notifyDataSetChanged();
-
                 }
-                else{
+                else if(mItems.contains(text)){
                     Toast.makeText(NoteActivity.this, text + " is already added.", Toast.LENGTH_LONG).show();
                 }
             }
         });
-        builder.setNegativeButton("Cancel", null)
+        builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                closeKeyboard();
+            }
+        })
                 .setTitle("New Item");
 
         builder.setView(newNoteBaseLayout);
         return builder;
+    }
+
+    private void closeKeyboard() {
+        InputMethodManager imm = (InputMethodManager)getSystemService(
+                Context.INPUT_METHOD_SERVICE);
+        imm.hideSoftInputFromWindow(mNewItemText.getWindowToken(), 0);
     }
 
     public void deleteItem(int position) {
@@ -317,13 +324,17 @@ public class NoteActivity extends Activity {
         builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
+                closeKeyboard();
                 mItems.set(position, mNewItemText.getText().toString());
                 mItemsArrayAdapter.update();
                 mItemsArrayAdapter.notifyDataSetChanged();
             }
         });
-        builder.show();
-
+        AlertDialog alertToShow = builder.create();
+        alertToShow.getWindow().setSoftInputMode(
+                WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
+        alertToShow.show();
+        mNewItemText.setSelection(mNewItemText.getText().length());
     }
 
     public void uncheckAll(View view) {

@@ -3,16 +3,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <TextView xmlns:android="http://schemas.android.com/apk/res/android"
-        android:id="@+id/itemText"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentLeft="true"
-        android:paddingLeft="15dp"
-        android:paddingRight="15dp"
-        android:text="New Text"
-        android:textSize="30sp" />
-
     <ImageView
         android:id="@+id/delete_item"
         android:layout_width="wrap_content"
@@ -28,5 +18,16 @@
         android:layout_centerVertical="true"
         android:layout_toLeftOf="@id/delete_item"
         android:src="@mipmap/ic_create_black_36dp" />
+
+    <TextView xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@+id/itemText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_toLeftOf="@+id/edit_item"
+        android:paddingLeft="15dp"
+        android:paddingRight="15dp"
+        android:text="New Text"
+        android:textSize="30sp" />
 
 </RelativeLayout>
