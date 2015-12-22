@@ -93,65 +93,34 @@ public class MainActivity extends AppCompatActivity implements
         noneSelected = true;
     }
 
-    public void noteFocused(int col){
+    public void noteFocused(int col, View v){
         currCol = col;
-        LinearLayout linearLayout = (LinearLayout) recList.getChildAt(selectedNotePosition);
-        if(col == 1){
-            final CardView one = (CardView) linearLayout.findViewById(R.id.card_view);
-            if(selectedNotePosition == priorSelectedNotePosition && col == prevCol && !noneSelected){
-                clearFocus();
-                one.setEnabled(false);
-                one.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        one.setEnabled(true);
-                    }
-                }, 300);
-                actionBarOff(null);
-                noneSelected = true;
-            }
-            else {
-                clearFocus();
-                one.setBackgroundDrawable(
-                        getResources().getDrawable(R.drawable.highlight_cardview));
-                one.setEnabled(false);
-                one.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        one.setEnabled(true);
-                    }
-                }, 300);
-                actionBarOn();
-                noneSelected = false;
-            }
-        }else{
-            final CardView two = (CardView) linearLayout.findViewById(R.id.card_view2);
-            if(selectedNotePosition == priorSelectedNotePosition && col == prevCol && !noneSelected) {
-                clearFocus();
-                two.setEnabled(false);
-                two.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        two.setEnabled(true);
-                    }
-                }, 400);
-                actionBarOff(null);
-                noneSelected = true;
-            }
-            else {
-                clearFocus();
-                two.setBackgroundDrawable(
-                        getResources().getDrawable(R.drawable.highlight_cardview));
-                two.setEnabled(false);
-                two.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        two.setEnabled(true);
-                    }
-                }, 400);
-                actionBarOn();
-                noneSelected = false;
-            }
+        final CardView card = (CardView) v;
+        if(selectedNotePosition == priorSelectedNotePosition && col == prevCol && !noneSelected){
+            clearFocus();
+            card.setEnabled(false);
+            card.postDelayed(new Runnable() {
+                         @Override
+                         public void run() {
+                                card.setEnabled(true);
+                                                              }
+                                                              }, 300);
+            actionBarOff(null);
+            noneSelected = true;
+        }
+        else {
+            clearFocus();
+            card.setBackgroundDrawable(
+                    getResources().getDrawable(R.drawable.highlight_cardview));
+            card.setEnabled(false);
+            card.postDelayed(new Runnable() {
+                         @Override
+                         public void run() {
+                                card.setEnabled(true);
+                                                              }
+                                                              }, 300);
+            actionBarOn();
+            noneSelected = false;
         }
 
         priorSelectedNotePosition = selectedNotePosition;
@@ -340,11 +309,8 @@ public class MainActivity extends AppCompatActivity implements
             }
         }
 
-        Log.v(TAG, "list=" + oneList.toString());
-
         mCardViewAdapter = new CardViewAdapter(mNoteList, this, mainColId, mainSlashes, mTitleList);
         recList.setAdapter(mCardViewAdapter);
-
     }
 
     @Override

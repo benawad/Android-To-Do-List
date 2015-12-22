@@ -115,7 +115,7 @@ public class CardViewAdapter extends RecyclerView.Adapter<CardViewAdapter.Contac
                 Log.v(TAG, "onLongClick");
                 mMainActivity.selectedId = columnId.get((int) v.getTag()).get(0);
                 mMainActivity.selectedNotePosition = (int) v.getTag();
-                mMainActivity.noteFocused(1);
+                mMainActivity.noteFocused(1, v);
                 //mMainActivity.deleteNote(columnId.get((int) v.getTag()).get(0));
                 return false;
             }
@@ -181,7 +181,7 @@ public class CardViewAdapter extends RecyclerView.Adapter<CardViewAdapter.Contac
                 public boolean onLongClick(View v) {
                     mMainActivity.selectedId = columnId.get((int) v.getTag()).get(1);
                     mMainActivity.selectedNotePosition = (int) v.getTag();
-                    mMainActivity.noteFocused(2);
+                    mMainActivity.noteFocused(2, v);
                     return false;
                 }
             });
