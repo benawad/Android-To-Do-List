@@ -4,35 +4,16 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <com.andexert.library.RippleView
-        android:id="@+id/ripple1"
-        android:layout_width="?android:actionBarSize"
-        android:layout_height="?android:actionBarSize"
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:id="@+id/back_icon"
         android:layout_alignParentLeft="true"
         android:layout_centerVertical="true"
-        app:rv_rippleDuration="100"
-        rv_centered="true">
-
-        <ImageView
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:id="@+id/back_icon"
-            android:layout_alignParentLeft="true"
-            android:layout_centerVertical="true"
-            android:src="@mipmap/ic_arrow_back_white_24dp"
-            android:onClick="backIcon"
-            android:padding="10dp"
-            />
-
-        <!--<ImageView-->
-            <!--android:layout_width="?android:actionBarSize"-->
-            <!--android:layout_height="?android:actionBarSize"-->
-            <!--android:src="@android:drawable/ic_menu_edit"-->
-            <!--android:layout_centerInParent="true"-->
-            <!--android:padding="10dp"-->
-            <!--android:background="@android:color/holo_blue_dark"/>-->
-
-    </com.andexert.library.RippleView>
+        android:src="@mipmap/ic_arrow_back_white_24dp"
+        android:onClick="backIcon"
+        android:padding="10dp"
+        />
 
     <com.andexert.library.RippleView
         android:id="@+id/ripple2"
